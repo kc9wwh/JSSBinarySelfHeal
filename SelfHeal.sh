@@ -100,7 +100,6 @@ fi
 sleep 5
 
 # Check to see if binary exists if not install it, if not, install the binary and eroll the client
-jamf_size=0
 # Check if the binary exists and get the size in 1K blocks (should be over 5K)
 if [[ ! -f /usr/local/jamf/bin/jamf ]];
 	then echo "Downloading the quickadd package from the JSS ...." | addDate >> $logFile;
