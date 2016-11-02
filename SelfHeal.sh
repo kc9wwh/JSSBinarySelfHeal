@@ -2,7 +2,7 @@
 
 #####################################################################################################
 #
-# Copyright (c) 2015, JAMF Software, LLC.  All rights reserved.
+# Copyright (c) 2016, JAMF Software, LLC.  All rights reserved.
 #
 #
 #       THIS SOFTWARE IS PROVIDED BY JAMF SOFTWARE, LLC "AS IS" AND ANY
