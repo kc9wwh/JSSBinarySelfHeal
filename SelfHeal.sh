@@ -101,15 +101,26 @@ sleep 5
 
 # Check to see if binary exists if not install it, if not, install the binary and eroll the client
 # Check if the binary exists and get the size in 1K blocks (should be over 5K)
-if [[ ! -f /usr/local/jamf/bin/jamf ]];
-	then echo "Downloading the quickadd package from the JSS ...." | addDate >> $logFile;
-		jamf_size=$(du -ks /usr/local/jamf/bin/jamf | awk '{ print $1 }')
-		echo "Jamf binary is $jamf_size bytes ...." | addDate >> $logFile;
+if [[ ! -f /usr/local/jamf/bin/jamf ]]; then
+		echo "Downloading the quickadd package from the JSS ...." | addDate >> $logFile;
+		echo "Downloading the quickadd package from the JSS ...." | addDate >> $logFile;
+		curl -sk $jssUrl/quickadd.zip > $quickLocation | addDate >> $logFile;
+		echo "Download is complete ... Unpacking the quickadd package installer to /tmp/" | addDate >> $logFile;
+		unzip /tmp/quickadd.zip -d /tmp/ | addDate >> $logFile;
+		echo "Unzip is complete, now installing the JSS Binary" | addDate >> $logFile;
+		/usr/sbin/installer -dumplog -verbose -pkg /tmp/QuickAdd.pkg -target / | addDate >> $logFile;
+		echo "Installation is complete, the client should now be enrolled into the JSS" | addDate >> $logFile;
+		echo "Cleaning up quickadd package ....." | addDate >> $logFile;
+		rm -f /tmp/quickadd.zip | addDate >> $logFile;
+		rm -rf /tmp/QuickAdd.pkg | addDate >> $logFile;
+		rm -rf /tmp/_* | addDate >> $logFile;
 fi
 # Checks the size of the jamf binary, and if it abnormally small, reinstall the binary and enroll the client
 # Checks if the file is at least 1M in size
-if [ $jamf_size -le 1000 ];
-	then echo "Jamf binary is abnormally small. Reinstalling ...." | addDate >> $logFile;
+if [ $jamf_size -le 1000 ]; then
+	 	jamf_size=$(du -ks /usr/local/jamf/bin/jamf | awk '{ print $1 }')
+		echo "Jamf binary is $jamf_size bytes ...." | addDate >> $logFile;
+		echo "Jamf binary is abnormally small. Reinstalling ...." | addDate >> $logFile;
         	echo "Downloading the quickadd package from the JSS ...." | addDate >> $logFile;
 		curl -sk $jssUrl/quickadd.zip > $quickLocation | addDate >> $logFile;
 		echo "Download is complete ... Unpacking the quickadd package installer to /tmp/" | addDate >> $logFile;
@@ -121,35 +132,40 @@ if [ $jamf_size -le 1000 ];
 		rm -f /tmp/quickadd.zip | addDate >> $logFile;
 		rm -rf /tmp/QuickAdd.pkg | addDate >> $logFile;
 		rm -rf /tmp/_* | addDate >> $logFile;
-	else echo "JAMF binary is installed .... nothing to do" | addDate >> $logFile;
+	else 
+		echo "JAMF binary is installed .... nothing to do" | addDate >> $logFile;
 fi
 
 # Check to see if the client to check in with the JSS, if not, enroll the client
-if [[ ${check} == "The JSS is available" ]];
-	then echo "Client can successfully check in with the JSS" | addDate >> $logFile;
-	else jamf createConf -k -url $jssUrl | addDate >> $logFile;
-	/usr/local/bin/jamf enroll -invitation $enrollInv | addDate >> $logFile;
+if [[ ${check} == "The JSS is available" ]]; then
+		echo "Client can successfully check in with the JSS" | addDate >> $logFile;
+	else 
+		jamf createConf -k -url $jssUrl | addDate >> $logFile;
+		/usr/local/bin/jamf enroll -invitation $enrollInv | addDate >> $logFile;
 fi
 
 # Can the client log it's IP address with the JSS, if not, enroll the client
-if [[ ${log} == "Logging to $jssUrl" ]];
-	then echo "Client can log IP address with JSS" | addDate >> $logFile
-	else jamf createConf -k -url $jssUrl | addDate >> $logFile;
-	/usr/local/bin/jamf enroll -invitation $enrollInv | addDate >> $logFile;
+if [[ ${log} == "Logging to $jssUrl" ]]; then
+		echo "Client can log IP address with JSS" | addDate >> $logFile
+	else 
+		jamf createConf -k -url $jssUrl | addDate >> $logFile;
+		/usr/local/bin/jamf enroll -invitation $enrollInv | addDate >> $logFile;
 fi
 
 # Can the client execute a policy, if not, enroll the client
-if [[ ${policy} == "heal" ]];
-	then echo "Client can execute policies at this time" | addDate >> $logFile;
-	else jamf createConf -k -url $jssUrl | addDate >> $logFile;
-	/usr/local/bin/jamf enroll -invitation $enrollInv | addDate >> $logFile;
+if [[ ${policy} == "heal" ]]; then
+		echo "Client can execute policies at this time" | addDate >> $logFile;
+	else 
+		jamf createConf -k -url $jssUrl | addDate >> $logFile;
+		/usr/local/bin/jamf enroll -invitation $enrollInv | addDate >> $logFile;
 fi
 
 # Does the client have it's MDM profile, if not, issue it to the client
-if [[ "$enrolled" != "" ]]; 
-	then echo "Client is enrolled with MDM" | addDate >> $logFile;
-	else echo "This client is not enrolled with MDM, enrolling now ....." | addDate >> $logFile;
-	/usr/local/bin/jamf mdm | addDate >> $logFile;
+if [[ "$enrolled" != "" ]]; then
+		echo "Client is enrolled with MDM" | addDate >> $logFile;
+	else 
+		echo "This client is not enrolled with MDM, enrolling now ....." | addDate >> $logFile;
+		/usr/local/bin/jamf mdm | addDate >> $logFile;
 fi
 
 # Clean up archived logs when 10 rollovers occur
