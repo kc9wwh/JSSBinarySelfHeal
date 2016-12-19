@@ -49,11 +49,23 @@ log=`/usr/local/bin/jamf log | rev | cut -c 5- | rev`
 policy=`/usr/local/bin/jamf policy -event heal | grep "Script result: heal" | cut -d " " -f3`
 mdmEnrollmentProfileID="00000000-0000-0000-A000-4A414D460003"
 enrolled=`/usr/bin/profiles -P | /usr/bin/grep "$mdmEnrollmentProfileID"`
+serial=$( system_profiler SPHardwareDataType | grep Serial |  awk '{print $NF}' )
+jssUser=""
+jssPass=""
 
 addDate(){
 	while IFS= read -r line; do
 		echo "$(date) $line"
 	done
+}
+
+clearLocationInfo(){
+	/usr/bin/curl -k -H "Accept: application/xml" -u "${jssUser}":"${jssPass}" ${jssUrl}/JSSResource/computers/serialnumber/${serial}/subset/location -o /Users/Shared/locationInfo.xml
+	/usr/bin/curl -k -H "Content-Type: application/xml" -u "${jssUser}":"${jssPass}" ${jssUrl}/JSSResource/computers/serialnumber/${serial} -X PUT -d "<computer><location><username></username><realname></realname><real_name></real_name><email_address></email_address><position></position><phone></phone><phone_number></phone_number><department></department><building></building><room></room></location></computer>"
+}
+
+replaceLocationInfo(){
+	/usr/bin/curl -k -H "Content-Type: application/xml" -u "${jssUser}":"${jssPass}" ${jssUrl}/JSSResource/computers/serialnumber/${serial} -X PUT -T /Users/Shared/locationInfo.xml 
 }
 
 ######################## Do Not Modify Below This Line ####################################
@@ -102,7 +114,8 @@ sleep 5
 # Check to see if binary exists if not install it, if not, install the binary and eroll the client
 # Check if the binary exists and get the size in 1K blocks (should be over 5K)
 if [[ ! -f /usr/local/jamf/bin/jamf ]]; then
-		echo "Downloading the quickadd package from the JSS ...." | addDate >> $logFile;
+		echo "Downloading and Clearing JSS User & Location Information (PI-002012) ...." | addDate >> $logFile;
+		clearLocationInfo
 		echo "Downloading the quickadd package from the JSS ...." | addDate >> $logFile;
 		curl -sk $jssUrl/quickadd.zip > $quickLocation | addDate >> $logFile;
 		echo "Download is complete ... Unpacking the quickadd package installer to /tmp/" | addDate >> $logFile;
@@ -114,6 +127,8 @@ if [[ ! -f /usr/local/jamf/bin/jamf ]]; then
 		rm -f /tmp/quickadd.zip | addDate >> $logFile;
 		rm -rf /tmp/QuickAdd.pkg | addDate >> $logFile;
 		rm -rf /tmp/_* | addDate >> $logFile;
+		echo "Restoring JSS User & Location Information ....." | addDate >> $logFile;
+		replaceLocationInfo
 fi
 # Checks the size of the jamf binary, and if it abnormally small, reinstall the binary and enroll the client
 # Checks if the file is at least 1M in size
@@ -121,6 +136,8 @@ if [ $jamf_size -le 1000 ]; then
 	 	jamf_size=$(du -ks /usr/local/jamf/bin/jamf | awk '{ print $1 }')
 		echo "Jamf binary is $jamf_size bytes ...." | addDate >> $logFile;
 		echo "Jamf binary is abnormally small. Reinstalling ...." | addDate >> $logFile;
+			echo "Downloading and Clearing JSS User & Location Information (PI-002012) ...." | addDate >> $logFile;
+			clearLocationInfo
         	echo "Downloading the quickadd package from the JSS ...." | addDate >> $logFile;
 		curl -sk $jssUrl/quickadd.zip > $quickLocation | addDate >> $logFile;
 		echo "Download is complete ... Unpacking the quickadd package installer to /tmp/" | addDate >> $logFile;
@@ -132,6 +149,8 @@ if [ $jamf_size -le 1000 ]; then
 		rm -f /tmp/quickadd.zip | addDate >> $logFile;
 		rm -rf /tmp/QuickAdd.pkg | addDate >> $logFile;
 		rm -rf /tmp/_* | addDate >> $logFile;
+		echo "Restoring JSS User & Location Information ....." | addDate >> $logFile;
+		replaceLocationInfo
 	else 
 		echo "JAMF binary is installed .... nothing to do" | addDate >> $logFile;
 fi
